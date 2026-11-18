@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.DS_Store
+
+# Accès à la base de données : jamais publiés
+api/config.php
+.env.local
+.env.*.local
+
+# Journaux
+*.log
+npm-debug.log*
+
+# Éditeurs
+.idea/
+.vscode/

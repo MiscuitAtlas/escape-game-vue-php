@@ -1,0 +1,6 @@
+# Seuls les points d'entrée de l'API sont accessibles depuis le web.
+Options -Indexes
+
+<FilesMatch "^(config|config\.example)\.php$">
+    Require all denied
+</FilesMatch>

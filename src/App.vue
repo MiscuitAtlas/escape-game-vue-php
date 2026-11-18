@@ -1,223 +1,183 @@
-<template>
-  <div id="app">
-    <!-- ✅ Navbar avec menu déroulant pour Game Room -->
-    <header class="navbar">
-      <nav>
-        <router-link to="/" class="nav-link" @click="logout">Accueil</router-link>
+<script setup>
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { auth } from "@/stores/auth.js";
 
-        <!-- ✅ Menu déroulant pour Game Room -->
-        <div class="dropdown">
-          <router-link to="/game-room" class="nav-link">Game Room ▾</router-link>
-          <div class="dropdown-content">
-            <router-link to="/escape-game-1" class="dropdown-link">La Bibliothèque Mystérieuse</router-link>
-            <router-link to="/escape-game-2" class="dropdown-link">Le Laboratoire Abandonné</router-link>
-            <router-link to="/escape-game-3" class="dropdown-link">Le Vaisseau Perdu</router-link>
-          </div>
-        </div>
+const router = useRouter();
+const logoutError = ref("");
 
-        <!-- ✅ Connexion/Déconnexion à droite -->
-        <div class="auth-buttons">
-          <template v-if="isLoggedIn">
-            👤 {{ username }}
-            <button @click="logout" class="btn-logout">Se déconnecter</button>
-          </template>
-          <template v-else>
-            <router-link to="/login" class="nav-link">Connexion</router-link>
-            <router-link to="/register" class="nav-link">Inscription</router-link>
-          </template>
-        </div>
-      </nav>
-    </header>
+function focusMain() {
+  document.getElementById("contenu")?.focus();
+}
 
-    <!-- ✅ Contenu principal -->
-    <main class="content">
-      <router-view></router-view>
-    </main>
-
-    <!-- ✅ Footer -->
-    <footer class="footer">
-      <p>&copy; 2024 Escape Game - Tous droits réservés.</p>
-    </footer>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'App',
-  data() {
-    return {
-      isLoggedIn: false,
-      username: ''
-    };
-  },
-  mounted() {
-    this.checkUserSession();
-  },
-  methods: {
-    checkUserSession() {
-      const user = localStorage.getItem('user');
-      if (user) {
-        try {
-          const parsedUser = JSON.parse(user);
-          if (parsedUser && parsedUser.username) {
-            this.isLoggedIn = true;
-            this.username = parsedUser.username;
-          }
-        } catch (error) {
-          console.error('Erreur lors de la récupération de l’utilisateur :', error);
-          localStorage.removeItem('user'); // Nettoyage des données corrompues
-        }
-      }
-    },
-
-    logout() {
-      localStorage.removeItem('user'); // ✅ Suppression de la session utilisateur
-      this.isLoggedIn = false;
-      this.username = '';
-      this.$router.push('/'); // ✅ Redirection vers la page d'accueil
-    }
+async function logout() {
+  logoutError.value = "";
+  try {
+    await auth.logout();
+    router.push({ name: "home" });
+  } catch (e) {
+    logoutError.value = e.message;
   }
-};
+}
 </script>
 
+<template>
+  <!-- Avec l'historique « hash », un lien #contenu changerait de page : le focus est déplacé en JavaScript. -->
+  <a class="skip-link" href="#contenu" @click.prevent="focusMain">Aller au contenu</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <router-link class="brand" :to="{ name: 'home' }">
+        <span aria-hidden="true">🔐</span>
+        Escape Game
+      </router-link>
+      <nav aria-label="Navigation principale">
+        <ul class="nav">
+          <li><router-link :to="{ name: 'rooms' }">Les salles</router-link></li>
+          <template v-if="auth.state.user">
+            <li><router-link :to="{ name: 'account' }">{{ auth.state.user.username }}</router-link></li>
+            <li><button type="button" class="link-button" @click="logout">Se déconnecter</button></li>
+          </template>
+          <template v-else-if="auth.state.online">
+            <li><router-link :to="{ name: 'login' }">Connexion</router-link></li>
+            <li><router-link class="btn btn-primary btn-small" :to="{ name: 'register' }">Créer un compte</router-link></li>
+          </template>
+        </ul>
+      </nav>
+    </div>
+    <p v-if="logoutError" class="container alert alert-error" role="alert">{{ logoutError }}</p>
+  </header>
+
+  <p v-if="!auth.state.online" class="demo-banner">
+    Version de démonstration : les trois salles sont jouables, mais les comptes et le classement demandent le serveur PHP.
+  </p>
+
+  <main id="contenu" class="container site-main" tabindex="-1">
+    <router-view />
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Escape game réalisé en licence professionnelle DLWM, puis retravaillé.</p>
+      <p>
+        <a href="https://github.com/MiscuitAtlas/escape-game-vue-php">Code source</a>
+        <span aria-hidden="true"> · </span>
+        <a href="https://miscuitatlas.github.io">Maxence Français</a>
+      </p>
+    </div>
+  </footer>
+</template>
+
 <style scoped>
-/* ✅ Styles globaux */
-* {
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 30;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: rgb(17 21 31 / 0.92);
+}
+
+.header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-block: 0.85rem;
+}
+
+.brand {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f4f4f4;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-/* ✅ Navbar */
-.navbar {
-  background-color: #004d99;
-  color: white;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  position: relative;
-  width: 100%;
-  z-index: 1000;
-}
-
-.navbar nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-/* ✅ Liens de navigation */
-.nav-link {
-  color: white;
+.nav a:not(.btn),
+.link-button {
+  color: var(--text);
   text-decoration: none;
-  font-weight: bold;
-  transition: background-color 0.3s, color 0.3s;
-  padding: 8px 12px;
-  border-radius: 5px;
-  position: relative;
+  font: inherit;
+  font-weight: 500;
 }
 
-.nav-link:hover {
-  background-color: #007acc;
-  color: white;
+.nav a:not(.btn):hover,
+.nav a.router-link-active:not(.btn),
+.link-button:hover {
+  color: var(--accent-strong);
 }
 
-/* ✅ Menu déroulant */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #004d99;
-  min-width: 200px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  z-index: 1;
-  border-radius: 5px;
-  overflow: hidden;
-  transition: all 0.3s ease-in-out;
-}
-
-.dropdown-link {
-  color: white;
-  padding: 10px 15px;
-  display: block;
-  text-decoration: none;
-  transition: background-color 0.3s ease;
-}
-
-.dropdown-link:hover {
-  background-color: #007acc;
-}
-
-/* ✅ Affichage du menu au survol */
-.dropdown:hover .dropdown-content {
-  display: block;
-}
-
-/* ✅ Connexion à droite */
-.auth-buttons {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ✅ Bouton de déconnexion */
-.btn-logout {
-  background-color: #e74c3c;
-  border: none;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 5px;
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
-.btn-logout:hover {
-  background-color: #c0392b;
-}
-
-/* ✅ Contenu principal */
-.content {
-  flex: 1;
-  padding: 20px;
-  min-height: 80vh;
-}
-
-/* ✅ Footer */
-.footer {
-  background-color: #004d99;
-  color: white;
+.demo-banner {
+  margin: 0;
+  padding: 0.6rem 1rem;
   text-align: center;
-  padding: 15px 0;
-  width: 100%;
+  background: var(--accent-soft);
+  border-bottom: 1px solid rgb(224 179 84 / 0.35);
   font-size: 0.9rem;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* ✅ Responsive Design */
-@media (max-width: 768px) {
-  .navbar nav {
-    flex-direction: column;
-    gap: 10px;
-  }
+.site-main {
+  padding-block: 2rem 3rem;
+  min-height: 70vh;
+}
 
-  .auth-buttons {
-    margin-top: 10px;
-  }
+.site-main:focus {
+  outline: none;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+  padding-block: 1.25rem;
+}
+
+.footer-inner p {
+  margin: 0;
+}
+
+.site-footer a {
+  color: var(--text);
 }
 </style>
