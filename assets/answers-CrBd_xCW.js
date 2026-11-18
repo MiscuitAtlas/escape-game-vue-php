@@ -1,0 +1,1 @@
+var e=/^(?:l'|le |la |les |un |une |des |du |de la |de l')/;function t(t){return String(t??``).toLowerCase().normalize(`NFD`).replace(/[̀-ͯ]/g,``).replace(/[’`]/g,`'`).replace(/\s+/g,` `).trim().replace(e,``).replace(/[^a-z0-9]/g,``)}function n(e,n){let r=t(e);return r!==``&&n.some(e=>t(e)===r)}export{n as t};

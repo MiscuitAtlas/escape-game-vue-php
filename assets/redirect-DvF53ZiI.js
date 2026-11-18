@@ -1,0 +1,1 @@
+function e(e){return typeof e==`string`&&e.startsWith(`/`)&&!e.startsWith(`//`)&&!e.includes(`\\`)?e:`/salles`}export{e as t};
